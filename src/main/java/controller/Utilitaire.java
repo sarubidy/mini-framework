@@ -55,7 +55,7 @@ public class Utilitaire {
         return classes;
     }
 
-    public static List<Class<?>> getClassesWithAnnotation(String packageName, Class annotationClass , Class methodeClass ,HashMap<String,Method> mapping)
+    public static List<Class<?>> getClassesWithAnnotation(String packageName, Class annotationClass , Class methodeClass ,HashMap<UrlInfo,MethodeInfo> mapping)
             throws IOException, ClassNotFoundException {
         List<Class<?>> result = new ArrayList<>();
         List<Class<?>> classes = getClasses(packageName);
@@ -65,7 +65,13 @@ public class Utilitaire {
                 List<Method> meth = getMethodsWithAnnotation(clazz, methodeClass);
                 for (Method methode : meth) {
                             UrlAnnotation urlAnnotation = methode.getAnnotation(UrlAnnotation.class);
-                            mapping.put(urlAnnotation.value(), methode);
+                            UrlInfo u = new UrlInfo();
+                            u.setAction(urlAnnotation.httpmethode());
+                            u.setClazz(clazz);
+                            u.setUrl(urlAnnotation.value()); 
+                            MethodeInfo m = new MethodeInfo();
+                            m.setMethode(methode);
+                            mapping.put(u , m);
                         }
                 result.add(clazz);
             }

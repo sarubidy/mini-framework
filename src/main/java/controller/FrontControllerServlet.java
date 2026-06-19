@@ -1,7 +1,6 @@
 package controller;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -9,7 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 public class FrontControllerServlet extends HttpServlet {
-    private HashMap<String,Method> mapping = new HashMap<>();
+    private HashMap<UrlInfo,MethodeInfo> mapping = new HashMap<>();
 
     @Override
     public void init() throws ServletException {
@@ -44,22 +43,43 @@ protected void processRequest(HttpServletRequest request, HttpServletResponse re
         route = "/";
     }
 
-    Method method = mapping.get(route);
+    HTTPmethode httpMethode = HTTPmethode.valueOf(request.getMethod());
+
+    UrlInfo urlInfo = null;
+    MethodeInfo method = null;
+    for (HashMap.Entry<UrlInfo, MethodeInfo> entry : mapping.entrySet()) {
+        UrlInfo url = entry.getKey();
+        if (url.getUrl().equals(route) && url.getAction() == httpMethode) {
+            urlInfo = url;
+            method = entry.getValue();
+            break;
+        }
+    }
 
     if (method == null) {
-        for (HashMap.Entry<String, Method> entry : mapping.entrySet()) {
-            String url = entry.getKey();
-            Method m = entry.getValue();
+        for (HashMap.Entry<UrlInfo, MethodeInfo> entry : mapping.entrySet()) {
+            UrlInfo url = entry.getKey();
+            MethodeInfo m = entry.getValue();
 
             response.getWriter().println(
-                "<p>URL : " + url + " -> Méthode : " + m.getName() + "</p>"
+                "<p>URL : " + url.getUrl() + " ,  Méthode : " + m.getMethode() + "  , Action :" + url.getAction()
             );
         }        return;
     }
 
     response.getWriter().println("<h2>URL trouvée</h2>");
     response.getWriter().println("<p>Route : " + route + "</p>");
-    response.getWriter().println("<p>Méthode appelée : " + method.getName() + "</p>");
+    response.getWriter().println("<p>Méthode appelée : " + method.getMethode() + "</p>");
+
+    try {
+        Object instance = urlInfo.getClazz().getDeclaredConstructor().newInstance();
+        Object resultat = method.getMethode().invoke(instance);
+        if (resultat != null) {
+            response.getWriter().println("<p>Résultat : " + resultat + "</p>");
+        }
+    } catch (Exception e) {
+        throw new ServletException("Erreur lors de l'invocation de la méthode", e);
+    }
 }
 
 }

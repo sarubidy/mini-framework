@@ -8,5 +8,6 @@ import java.lang.annotation.RetentionPolicy;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface UrlAnnotation {
-    String value(); 
+    String value();
+    HTTPmethode httpmethode() default HTTPmethode.GET;
 }
