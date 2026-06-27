@@ -1,13 +1,11 @@
-package controller;
-
+package annotation;
 import java.lang.annotation.Target;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-@Target(ElementType.METHOD)
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface UrlAnnotation {
-    String value();
-    HTTPmethode httpmethode() default HTTPmethode.GET;
+public @interface Annotation {
+    
 }

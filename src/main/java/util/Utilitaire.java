@@ -1,4 +1,4 @@
-package controller;
+package util;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,6 +8,10 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+
+import annotation.UrlAnnotation;
+import model.MethodeInfo;
+import model.UrlInfo;
 
 public class Utilitaire {
 
@@ -67,10 +71,12 @@ public class Utilitaire {
                             UrlAnnotation urlAnnotation = methode.getAnnotation(UrlAnnotation.class);
                             UrlInfo u = new UrlInfo();
                             u.setAction(urlAnnotation.httpmethode());
-                            u.setClazz(clazz);
                             u.setUrl(urlAnnotation.value()); 
                             MethodeInfo m = new MethodeInfo();
                             m.setMethode(methode);
+                            if(mapping.containsKey(u)){
+                                throw new IllegalStateException("route en double");
+                            };
                             mapping.put(u , m);
                         }
                 result.add(clazz);
