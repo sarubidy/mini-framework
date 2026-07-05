@@ -12,19 +12,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import model.HTTPmethode;
 import model.MethodeInfo;
 import model.UrlInfo;
-import util.Utilitaire;
 
 public class FrontControllerServlet extends HttpServlet {
     private HashMap<UrlInfo, MethodeInfo> mapping = new HashMap<>();
 
     @Override
     public void init() throws ServletException {
-        String packageName = getServletConfig().getInitParameter("controller-package");
-        try {
-            Utilitaire.getClassesWithAnnotation(packageName, Annotation.class, UrlAnnotation.class, mapping);
-        } catch (Exception e) {
-            throw new ServletException(e);
-        }
+        this.mapping = (HashMap<UrlInfo, MethodeInfo>) getServletContext().getAttribute("mapping");
     }
 
     @Override

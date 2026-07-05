@@ -74,6 +74,7 @@ public class Utilitaire {
                             u.setUrl(urlAnnotation.value()); 
                             MethodeInfo m = new MethodeInfo();
                             m.setMethode(methode);
+                            
                             if(mapping.containsKey(u)){
                                 throw new IllegalStateException("route en double");
                             };
