@@ -2,9 +2,8 @@ package controller;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 
-import annotation.Annotation;
-import annotation.UrlAnnotation;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,10 +14,14 @@ import model.UrlInfo;
 
 public class FrontControllerServlet extends HttpServlet {
     private HashMap<UrlInfo, MethodeInfo> mapping = new HashMap<>();
+    private String prefixe = "";
+    private String suffixe = "";
 
     @Override
     public void init() throws ServletException {
         this.mapping = (HashMap<UrlInfo, MethodeInfo>) getServletContext().getAttribute("mapping");
+        this.prefixe = (String) getServletContext().getInitParameter("view-prefix");
+        this.suffixe = (String) getServletContext().getInitParameter("view-suffix");
     }
 
     @Override
@@ -75,6 +78,18 @@ public class FrontControllerServlet extends HttpServlet {
             if (resultat != null) {
                 response.getWriter().println("<p>Résultat : " + resultat + "</p>");
             }
+            
+            if(resultat instanceof model.ModelAndView) {
+                model.ModelAndView mv = (model.ModelAndView) resultat;
+                String urlSuivant = mv.getUrlSuivant();
+                urlSuivant = prefixe + urlSuivant + suffixe;
+                request.setAttribute("prefixe", prefixe);
+                for(Map.Entry<String, String> entry : mv.getList().entrySet()) {
+                    request.setAttribute(entry.getKey(), entry.getValue());
+                }
+                request.getRequestDispatcher(urlSuivant).forward(request, response);
+            }
+
         } catch (Exception e) {
             throw new ServletException("Erreur lors de l'invocation de la méthode", e);
         }
