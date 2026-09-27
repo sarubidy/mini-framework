@@ -17,6 +17,13 @@ public class ModelAndView {
     }
     public void setList(HashMap<String, String> list) {
         this.list = list;
-    }  
+    }
+
+    public void addObject(String key, String value) {
+        if (list == null) {
+            list = new HashMap<>();
+        }
+        list.put(key, value);
+    }
 }
 

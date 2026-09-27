@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -30,7 +31,12 @@ public class Utilitaire {
 
             URL resource = resources.nextElement();
 
-            File directory = new File(resource.getFile());
+            File directory;
+            try {
+                directory = new File(resource.toURI());
+            } catch (URISyntaxException e) {
+                throw new IOException("Impossible de lire le chemin du package " + packageName, e);
+            }
 
             if (directory.exists()) {
 

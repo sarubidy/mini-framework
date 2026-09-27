@@ -9,8 +9,8 @@
     <artifactId>framework</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
-    <!-- Le framework sera généré en .jar -->
-    <packaging>jar</packaging>
+    <!-- Application web de démonstration déployable sur Tomcat -->
+    <packaging>war</packaging>
 
     <name>framework</name>
     <description>Mini framework MVC maison</description>
@@ -31,5 +31,16 @@
     <scope>provided</scope>
 </dependency>
     </dependencies>
+
+    <build>
+        <finalName>exo</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.4.0</version>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

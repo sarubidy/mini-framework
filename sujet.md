@@ -21,3 +21,6 @@ Instruction :
 Etape (To do)
  - Creer un model ModelAndView qui aura comme parmetre le nom du vue et les donner a passer
  - Dans FrontControllerServlet.java , specifiquement dans init , il faut 
+
+sprint 6
+ refa manao requette tsy manao requette dispacher fa json

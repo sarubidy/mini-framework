@@ -11,6 +11,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import model.HTTPmethode;
 import model.MethodeInfo;
 import model.UrlInfo;
+import model.ModelAndView;
+import util.JsonUtil;
 
 public class FrontControllerServlet extends HttpServlet {
     private HashMap<UrlInfo, MethodeInfo> mapping = new HashMap<>();
@@ -39,7 +41,6 @@ public class FrontControllerServlet extends HttpServlet {
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        response.setContentType("text/html;charset=UTF-8");
         String contextPath = request.getContextPath();
         String requestURI = request.getRequestURI();
         String route = requestURI.substring(contextPath.length());
@@ -67,20 +68,12 @@ public class FrontControllerServlet extends HttpServlet {
             return;
         }
 
-        response.getWriter().println("<h2>URL trouvée</h2>");
-        response.getWriter().println("<p>Route : " + route + "</p>");
-        response.getWriter().println("<p>Méthode appelée : " + method.getMethode() + "</p>");
-
         try {
             Class<?> clazz = method.getMethode().getDeclaringClass();
             Object instance = clazz.getDeclaredConstructor().newInstance();
             Object resultat = method.getMethode().invoke(instance);
-            if (resultat != null) {
-                response.getWriter().println("<p>Résultat : " + resultat + "</p>");
-            }
-            
-            if(resultat instanceof model.ModelAndView) {
-                model.ModelAndView mv = (model.ModelAndView) resultat;
+            if (resultat instanceof ModelAndView) {
+                ModelAndView mv = (ModelAndView) resultat;
                 String urlSuivant = mv.getUrlSuivant();
                 urlSuivant = prefixe + urlSuivant + suffixe;
                 request.setAttribute("prefixe", prefixe);
@@ -88,6 +81,12 @@ public class FrontControllerServlet extends HttpServlet {
                     request.setAttribute(entry.getKey(), entry.getValue());
                 }
                 request.getRequestDispatcher(urlSuivant).forward(request, response);
+            } else if (resultat instanceof String) {
+                response.setContentType("text/plain;charset=UTF-8");
+                response.getWriter().print(resultat);
+            } else {
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().print(JsonUtil.toJson(resultat));
             }
 
         } catch (Exception e) {
