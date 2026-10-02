@@ -9,8 +9,8 @@
     <artifactId>framework</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
-    <!-- Le framework sera généré en .jar -->
-    <packaging>jar</packaging>
+    <!-- Application web déployable sur Tomcat -->
+    <packaging>war</packaging>
 
     <name>framework</name>
     <description>Mini framework MVC maison</description>
@@ -30,6 +30,22 @@
     <version>6.0.0</version>
     <scope>provided</scope>
 </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.11.0</version>
+        </dependency>
     </dependencies>
+
+    <build>
+        <finalName>exo</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.4.0</version>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
