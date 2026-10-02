@@ -6,6 +6,13 @@ public class ModelAndView {
     private String urlSuivant;
     private HashMap<String,String> list ;
 
+    public ModelAndView() {
+    }
+
+    public ModelAndView(String urlSuivant) {
+        this.urlSuivant = urlSuivant;
+    }
+
     public String getUrlSuivant() {
         return urlSuivant;
     }
@@ -17,6 +24,13 @@ public class ModelAndView {
     }
     public void setList(HashMap<String, String> list) {
         this.list = list;
-    }  
+    }
+
+    public void addObject(String key, String value) {
+        if (list == null) {
+            list = new HashMap<>();
+        }
+        list.put(key, value);
+    }
 }
 

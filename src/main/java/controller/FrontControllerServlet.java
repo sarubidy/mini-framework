@@ -1,9 +1,14 @@
 package controller;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.gson.Gson;
+import annotation.Annotation;
+import annotation.JsonAnnotation;
+import annotation.UrlAnnotation;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,15 +16,27 @@ import jakarta.servlet.http.HttpServletResponse;
 import model.HTTPmethode;
 import model.MethodeInfo;
 import model.UrlInfo;
+import model.ModelAndView;
+import util.Utilitaire;
 
 public class FrontControllerServlet extends HttpServlet {
     private HashMap<UrlInfo, MethodeInfo> mapping = new HashMap<>();
     private String prefixe = "";
     private String suffixe = "";
+    private final Gson gson = new Gson();
 
     @Override
     public void init() throws ServletException {
-        this.mapping = (HashMap<UrlInfo, MethodeInfo>) getServletContext().getAttribute("mapping");
+        String packageName = getServletContext().getInitParameter("controller-package");
+        try {
+            Utilitaire.getClassesWithAnnotation(
+                    packageName,
+                    Annotation.class,
+                    UrlAnnotation.class,
+                    this.mapping);
+        } catch (Exception e) {
+            throw new ServletException("Impossible de charger les contrôleurs annotés", e);
+        }
         this.prefixe = (String) getServletContext().getInitParameter("view-prefix");
         this.suffixe = (String) getServletContext().getInitParameter("view-suffix");
     }
@@ -39,7 +56,6 @@ public class FrontControllerServlet extends HttpServlet {
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        response.setContentType("text/html;charset=UTF-8");
         String contextPath = request.getContextPath();
         String requestURI = request.getRequestURI();
         String route = requestURI.substring(contextPath.length());
@@ -67,20 +83,30 @@ public class FrontControllerServlet extends HttpServlet {
             return;
         }
 
-        response.getWriter().println("<h2>URL trouvée</h2>");
-        response.getWriter().println("<p>Route : " + route + "</p>");
-        response.getWriter().println("<p>Méthode appelée : " + method.getMethode() + "</p>");
-
         try {
-            Class<?> clazz = method.getMethode().getDeclaringClass();
-            Object instance = clazz.getDeclaredConstructor().newInstance();
-            Object resultat = method.getMethode().invoke(instance);
+            Method methode = method.getMethode();
+            Object instance = methode.getDeclaringClass().getDeclaredConstructor().newInstance();
+            Object resultat = methode.invoke(instance);
+
+            if (methode.isAnnotationPresent(JsonAnnotation.class)) {
+                response.setContentType("application/json;charset=UTF-8");
+                Object data = resultat instanceof ModelAndView
+                        ? ((ModelAndView) resultat).getList()
+                        : resultat;
+                response.getWriter().print(gson.toJson(data));
+                return;
+            }
+
+            response.setContentType("text/html;charset=UTF-8");
+            response.getWriter().println("<h2>URL trouvée</h2>");
+            response.getWriter().println("<p>Route : " + route + "</p>");
+            response.getWriter().println("<p>Méthode appelée : " + methode + "</p>");
             if (resultat != null) {
                 response.getWriter().println("<p>Résultat : " + resultat + "</p>");
             }
-            
-            if(resultat instanceof model.ModelAndView) {
-                model.ModelAndView mv = (model.ModelAndView) resultat;
+
+            if (resultat instanceof ModelAndView) {
+                ModelAndView mv = (ModelAndView) resultat;
                 String urlSuivant = mv.getUrlSuivant();
                 urlSuivant = prefixe + urlSuivant + suffixe;
                 request.setAttribute("prefixe", prefixe);
