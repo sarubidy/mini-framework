@@ -7,6 +7,11 @@ set "WEBAPPS_DIR=%TOMCAT_DIR%\webapps"
 set "WAR_NAME=exo.war"
 set "WAR_PATH=%PROJECT_DIR%target\%WAR_NAME%"
 
+if exist "C:\Program Files\Java\jdk-26.0.2\bin\java.exe" (
+    set "JAVA_HOME=C:\Program Files\Java\jdk-26.0.2"
+    set "PATH=%JAVA_HOME%\bin;%PATH%"
+)
+
 echo Compilation du projet...
 pushd "%PROJECT_DIR%"
 call mvn clean package
