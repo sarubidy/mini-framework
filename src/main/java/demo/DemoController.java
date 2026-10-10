@@ -26,6 +26,18 @@ public class DemoController {
         return modelAndView;
     }
 
+    @UrlAnnotation(value = "/form", httpmethode = HTTPmethode.GET)
+    public ModelAndView form() {
+        return new ModelAndView("formulaire");
+    }
+
+    @UrlAnnotation(value = "/form", httpmethode = HTTPmethode.POST)
+    public ModelAndView submitForm(String nom, int age) {
+        ModelAndView modelAndView = new ModelAndView("resultat");
+        modelAndView.addObject("message", "Bonjour " + nom + ", age : " + age);
+        return modelAndView;
+    }
+
     public static class DemoUser {
         private final int id;
         private final String nom;
