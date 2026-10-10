@@ -135,16 +135,42 @@ public class FrontControllerServlet extends HttpServlet {
                 arguments[index] = springContext;
                 continue;
             }
-            if (index == 0 && springContext == null && !isRequestParameterType(parameterType)) {
-                throw new ServletException(
-                        "Le premier paramètre de " + methode.getName()
-                                + " nécessite un springContext disponible dans le ServletContext");
+            if (isRequestParameterType(parameterType)) {
+                String value = request.getParameter(parameters[index].getName());
+                arguments[index] = convertParameter(value, parameterType);
+            } else {
+                arguments[index] = bindObject(parameterType, parameters[index].getName(), request);
             }
-
-            String value = request.getParameter(parameters[index].getName());
-            arguments[index] = convertParameter(value, parameterType);
         }
         return arguments;
+    }
+
+    private Object bindObject(Class<?> objectType, String parameterName, HttpServletRequest request)
+            throws ServletException {
+        try {
+            Object object = objectType.getDeclaredConstructor().newInstance();
+            for (java.lang.reflect.Field field : objectType.getDeclaredFields()) {
+                if (java.lang.reflect.Modifier.isStatic(field.getModifiers())
+                        || java.lang.reflect.Modifier.isFinal(field.getModifiers())
+                        || field.isSynthetic()) {
+                    continue;
+                }
+                if (!isRequestParameterType(field.getType())) {
+                    throw new ServletException("Champ objet non supporté : " + field.getName());
+                }
+
+                String value = request.getParameter(parameterName + "." + field.getName());
+                if (value == null) {
+                    value = request.getParameter(field.getName());
+                }
+                field.setAccessible(true);
+                field.set(object, convertParameter(value, field.getType()));
+            }
+            return object;
+        } catch (ReflectiveOperationException e) {
+            throw new ServletException(
+                    "Le type " + objectType.getName() + " doit avoir un constructeur sans paramètre", e);
+        }
     }
 
     private boolean isRequestParameterType(Class<?> type) {
