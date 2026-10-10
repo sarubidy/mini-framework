@@ -38,6 +38,26 @@ public class DemoController {
         return modelAndView;
     }
 
+    @UrlAnnotation(value = "/form-objet", httpmethode = HTTPmethode.GET)
+    public ModelAndView formObjet() {
+        return new ModelAndView("formulaire-objet");
+    }
+
+    @UrlAnnotation(value = "/form-objet", httpmethode = HTTPmethode.POST)
+    public ModelAndView submitFormObjet(ProfilForm profil) {
+        ModelAndView modelAndView = new ModelAndView("resultat");
+        modelAndView.addObject("message", "Profil : " + profil.nom + ", age : " + profil.age);
+        return modelAndView;
+    }
+
+    public static class ProfilForm {
+        private String nom;
+        private int age;
+
+        public ProfilForm() {
+        }
+    }
+
     public static class DemoUser {
         private final int id;
         private final String nom;

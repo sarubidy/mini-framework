@@ -9,5 +9,6 @@ annotation\JsonAnnotation.class
 model\HTTPmethode.class
 listener\AppContextListener.class
 util\JsonUtil.class
+demo\DemoController$ProfilForm.class
 annotation\Annotation.class
 util\Utilitaire.class
