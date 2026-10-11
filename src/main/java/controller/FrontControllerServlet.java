@@ -4,11 +4,14 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.gson.Gson;
 import annotation.Annotation;
 import annotation.JsonAnnotation;
+import annotation.ObjetAnnotation;
 import annotation.UrlAnnotation;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -138,15 +141,30 @@ public class FrontControllerServlet extends HttpServlet {
             if (isRequestParameterType(parameterType)) {
                 String value = request.getParameter(parameters[index].getName());
                 arguments[index] = convertParameter(value, parameterType);
+            } else if (parameters[index].isAnnotationPresent(ObjetAnnotation.class)) {
+                arguments[index] = bindObject(
+                        parameterType,
+                        parameters[index].getName(),
+                        request,
+                        new HashSet<>());
             } else {
-                arguments[index] = bindObject(parameterType, parameters[index].getName(), request);
+                throw new ServletException(
+                        "Le paramètre objet " + parameters[index].getName()
+                                + " doit porter @ObjetAnnotation");
             }
         }
         return arguments;
     }
 
-    private Object bindObject(Class<?> objectType, String parameterName, HttpServletRequest request)
+    private Object bindObject(
+            Class<?> objectType,
+            String parameterPrefix,
+            HttpServletRequest request,
+            Set<Class<?>> bindingTypes)
             throws ServletException {
+        if (!bindingTypes.add(objectType)) {
+            throw new ServletException("Cycle détecté pendant le binding de " + objectType.getName());
+        }
         try {
             Object object = objectType.getDeclaredConstructor().newInstance();
             for (java.lang.reflect.Field field : objectType.getDeclaredFields()) {
@@ -155,21 +173,26 @@ public class FrontControllerServlet extends HttpServlet {
                         || field.isSynthetic()) {
                     continue;
                 }
-                if (!isRequestParameterType(field.getType())) {
-                    throw new ServletException("Champ objet non supporté : " + field.getName());
-                }
-
-                String value = request.getParameter(parameterName + "." + field.getName());
-                if (value == null) {
-                    value = request.getParameter(field.getName());
+                String fieldPrefix = parameterPrefix + "." + field.getName();
+                Object fieldValue;
+                if (isRequestParameterType(field.getType())) {
+                    String value = request.getParameter(fieldPrefix);
+                    if (value == null) {
+                        value = request.getParameter(field.getName());
+                    }
+                    fieldValue = convertParameter(value, field.getType());
+                } else {
+                    fieldValue = bindObject(field.getType(), fieldPrefix, request, bindingTypes);
                 }
                 field.setAccessible(true);
-                field.set(object, convertParameter(value, field.getType()));
+                field.set(object, fieldValue);
             }
             return object;
         } catch (ReflectiveOperationException e) {
             throw new ServletException(
                     "Le type " + objectType.getName() + " doit avoir un constructeur sans paramètre", e);
+        } finally {
+            bindingTypes.remove(objectType);
         }
     }
 
