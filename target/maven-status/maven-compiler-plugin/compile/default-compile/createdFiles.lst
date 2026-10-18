@@ -1,5 +1,6 @@
 demo\DemoController$UploadForm.class
 util\UploadStore.class
+demo\DemoController$AdresseForm.class
 annotation\UrlAnnotation.class
 model\ModelAndView.class
 demo\DemoController.class
@@ -12,6 +13,7 @@ controller\FrontControllerServlet.class
 annotation\JsonAnnotation.class
 annotation\ObjetAnnotation.class
 model\HTTPmethode.class
+demo\DemoController$PersonneForm.class
 listener\AppContextListener.class
 util\JsonUtil.class
 demo\DemoController$ProfilForm.class

@@ -96,12 +96,71 @@ public class DemoController {
         modelAndView.addObject("type", file.getType());
         if (file.getType() != null && file.getType().startsWith("image/")) {
             String image = "data:" + file.getType() + ";base64,"
-                + java.util.Base64.getEncoder().encodeToString(file.getContenu());
+                    + java.util.Base64.getEncoder().encodeToString(file.getContenu());
             modelAndView.addObject("image", image);
         } else {
             modelAndView.addObject("contenu",
-                new String(file.getContenu(), java.nio.charset.StandardCharsets.UTF_8));
+                    new String(file.getContenu(), java.nio.charset.StandardCharsets.UTF_8));
         }
+        return modelAndView;
+    }
+
+    @UrlAnnotation(value = "/form-avance", httpmethode = HTTPmethode.GET)
+    public ModelAndView formAvance() {
+        return new ModelAndView("formulaire-avance");
+    }
+
+    @UrlAnnotation(value = "/form-avance", httpmethode = HTTPmethode.POST)
+    public ModelAndView submitFormAvance(@ObjetAnnotation PersonneForm personne1,
+            @ObjetAnnotation PersonneForm personne2, String commentaire) {
+        ModelAndView modelAndView = new ModelAndView("resultat");
+        String message = "Personne 1 : " + personne1.nom + ", lot : " + personne1.adresse.lot
+                + " | Personne 2 : " + personne2.nom + ", lot : " + personne2.adresse.lot
+                + " | " + commentaire;
+        modelAndView.addObject("message", message);
+        return modelAndView;
+    }
+
+    @UrlAnnotation(value = "/form-recursif", httpmethode = HTTPmethode.GET)
+    public ModelAndView formRecursif() {
+        return new ModelAndView("formulaire-recursif");
+    }
+
+    @UrlAnnotation(value = "/form-recursif", httpmethode = HTTPmethode.POST)
+    public ModelAndView submitFormRecursif(@ObjetAnnotation PersonneForm personne) {
+        ModelAndView modelAndView = new ModelAndView("resultat");
+        modelAndView.addObject("message", "Personne : " + personne.nom
+                + ", adresse : lot " + personne.adresse.lot
+                + ", parcelle " + personne.adresse.parcelle);
+        return modelAndView;
+    }
+
+    @UrlAnnotation(value = "/form-multiple", httpmethode = HTTPmethode.GET)
+    public ModelAndView formMultiple() {
+        return new ModelAndView("formulaire-multiple");
+    }
+
+    @UrlAnnotation(value = "/form-multiple", httpmethode = HTTPmethode.POST)
+    public ModelAndView submitFormMultiple(@ObjetAnnotation PersonneForm personne1,
+            @ObjetAnnotation PersonneForm personne2) {
+        ModelAndView modelAndView = new ModelAndView("resultat");
+        modelAndView.addObject("message", "Personne 1 : " + personne1.nom + " (" + personne1.age
+                + ") | Personne 2 : " + personne2.nom + " (" + personne2.age + ")");
+        return modelAndView;
+    }
+
+    @UrlAnnotation(value = "/form-mixte", httpmethode = HTTPmethode.GET)
+    public ModelAndView formMixte() {
+        return new ModelAndView("formulaire-mixte");
+    }
+
+    @UrlAnnotation(value = "/form-mixte", httpmethode = HTTPmethode.POST)
+    public ModelAndView submitFormMixte(@ObjetAnnotation PersonneForm personne,
+            String commentaire, int score) {
+        ModelAndView modelAndView = new ModelAndView("resultat");
+        modelAndView.addObject("message", personne.nom + " | age : " + personne.age
+                + " | commentaire : " + commentaire
+                + " | score : " + score);
         return modelAndView;
     }
 
@@ -112,25 +171,38 @@ public class DemoController {
                     .append(file.getId())
                     .append("\">")
                     .append(file.getNomFichier())
-                    .append(" (" )
+                    .append(" (")
                     .append(file.getType())
-                .append(")</a>")
-                .append("<form method=\"post\" action=\"/exo/upload/delete\" style=\"display:inline\">")
-                .append("<input type=\"hidden\" name=\"id\" value=\"")
-                .append(file.getId())
-                .append("\"><button type=\"submit\">Supprimer</button></form></li>");
+                    .append(")</a>")
+                    .append("<form method=\"post\" action=\"/exo/upload/delete\" style=\"display:inline\">")
+                    .append("<input type=\"hidden\" name=\"id\" value=\"")
+                    .append(file.getId())
+                    .append("\"><button type=\"submit\">Supprimer</button></form></li>");
         }
         return links.length() == 0 ? "<li>Aucun fichier uploadé.</li>" : links.toString();
-    }
-
-    private int size(byte[] value) {
-        return value == null ? 0 : value.length;
     }
 
     public static class UploadForm {
         private MapFile mapFile;
 
         public UploadForm() {
+        }
+    }
+
+    public static class PersonneForm {
+        private String nom;
+        private int age;
+        private AdresseForm adresse;
+
+        public PersonneForm() {
+        }
+    }
+
+    public static class AdresseForm {
+        private String lot;
+        private String parcelle;
+
+        public AdresseForm() {
         }
     }
 
