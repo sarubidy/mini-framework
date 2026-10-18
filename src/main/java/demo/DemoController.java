@@ -2,8 +2,10 @@ package demo;
 
 import annotation.Annotation;
 import annotation.JsonAnnotation;
+import annotation.ObjetAnnotation;
 import annotation.UrlAnnotation;
 import model.HTTPmethode;
+import model.MapFile;
 import model.ModelAndView;
 
 @Annotation
@@ -44,10 +46,38 @@ public class DemoController {
     }
 
     @UrlAnnotation(value = "/form-objet", httpmethode = HTTPmethode.POST)
-    public ModelAndView submitFormObjet(ProfilForm profil) {
+    public ModelAndView submitFormObjet(@ObjetAnnotation ProfilForm profil) {
         ModelAndView modelAndView = new ModelAndView("resultat");
         modelAndView.addObject("message", "Profil : " + profil.nom + ", age : " + profil.age);
         return modelAndView;
+    }
+
+    @UrlAnnotation(value = "/upload", httpmethode = HTTPmethode.GET)
+    public ModelAndView upload() {
+        return new ModelAndView("upload");
+    }
+
+    @UrlAnnotation(value = "/upload", httpmethode = HTTPmethode.POST)
+    public ModelAndView submitUpload(@ObjetAnnotation UploadForm formulaire) {
+        MapFile fichiers = formulaire.mapFile;
+        String message = "Fichier : " + fichiers.getNomFichier()
+                + " | type : " + fichiers.getType()
+                + " | recto : " + size(fichiers.getRectoCIN())
+                + " octets | verso : " + size(fichiers.getVerseauCIN()) + " octets";
+        ModelAndView modelAndView = new ModelAndView("resultat");
+        modelAndView.addObject("message", message);
+        return modelAndView;
+    }
+
+    private int size(byte[] value) {
+        return value == null ? 0 : value.length;
+    }
+
+    public static class UploadForm {
+        private MapFile mapFile;
+
+        public UploadForm() {
+        }
     }
 
     public static class ProfilForm {

@@ -4,12 +4,16 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.gson.Gson;
 import annotation.Annotation;
 import annotation.JsonAnnotation;
+import annotation.ObjetAnnotation;
 import annotation.UrlAnnotation;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,8 +22,10 @@ import model.HTTPmethode;
 import model.MethodeInfo;
 import model.UrlInfo;
 import model.ModelAndView;
+import model.MapFile;
 import util.Utilitaire;
 
+@MultipartConfig(maxFileSize = 10 * 1024 * 1024, maxRequestSize = 25 * 1024 * 1024)
 public class FrontControllerServlet extends HttpServlet {
     private HashMap<UrlInfo, MethodeInfo> mapping = new HashMap<>();
     private String prefixe = "";
@@ -138,16 +144,28 @@ public class FrontControllerServlet extends HttpServlet {
             if (isRequestParameterType(parameterType)) {
                 String value = request.getParameter(parameters[index].getName());
                 arguments[index] = convertParameter(value, parameterType);
+            } else if (parameters[index].isAnnotationPresent(ObjetAnnotation.class)) {
+                arguments[index] = bindObject(parameterType, parameters[index].getName(), request, new HashSet<>());
             } else {
-                arguments[index] = bindObject(parameterType, parameters[index].getName(), request);
+                throw new ServletException("Le paramètre objet " + parameters[index].getName()
+                        + " doit porter @ObjetAnnotation");
             }
         }
         return arguments;
     }
 
-    private Object bindObject(Class<?> objectType, String parameterName, HttpServletRequest request)
-            throws ServletException {
+    private Object bindObject(
+            Class<?> objectType,
+            String parameterName,
+            HttpServletRequest request,
+            Set<Class<?>> bindingTypes) throws ServletException {
+        if (!bindingTypes.add(objectType)) {
+            throw new ServletException("Cycle détecté pendant le binding de " + objectType.getName());
+        }
         try {
+            if (objectType == MapFile.class) {
+                return bindMapFile(parameterName, request);
+            }
             Object object = objectType.getDeclaredConstructor().newInstance();
             for (java.lang.reflect.Field field : objectType.getDeclaredFields()) {
                 if (java.lang.reflect.Modifier.isStatic(field.getModifiers())
@@ -155,22 +173,60 @@ public class FrontControllerServlet extends HttpServlet {
                         || field.isSynthetic()) {
                     continue;
                 }
-                if (!isRequestParameterType(field.getType())) {
-                    throw new ServletException("Champ objet non supporté : " + field.getName());
-                }
-
-                String value = request.getParameter(parameterName + "." + field.getName());
-                if (value == null) {
-                    value = request.getParameter(field.getName());
+                Object fieldValue;
+                String fieldPrefix = parameterName + "." + field.getName();
+                if (field.getType() == MapFile.class) {
+                    fieldValue = bindMapFile(fieldPrefix, request);
+                } else if (isRequestParameterType(field.getType())) {
+                    String value = request.getParameter(fieldPrefix);
+                    if (value == null) {
+                        value = request.getParameter(field.getName());
+                    }
+                    fieldValue = convertParameter(value, field.getType());
+                } else {
+                    fieldValue = bindObject(field.getType(), fieldPrefix, request, bindingTypes);
                 }
                 field.setAccessible(true);
-                field.set(object, convertParameter(value, field.getType()));
+                field.set(object, fieldValue);
             }
             return object;
         } catch (ReflectiveOperationException e) {
             throw new ServletException(
                     "Le type " + objectType.getName() + " doit avoir un constructeur sans paramètre", e);
+        } finally {
+            bindingTypes.remove(objectType);
         }
+    }
+
+    private MapFile bindMapFile(String prefix, HttpServletRequest request) throws ServletException {
+        try {
+            jakarta.servlet.http.Part recto = findPart(request, prefix + ".rectoCIN", "rectoCIN");
+            jakarta.servlet.http.Part verso = findPart(request, prefix + ".verseauCIN", "verseauCIN");
+            if (recto == null && verso == null) {
+                return new MapFile();
+            }
+
+            MapFile mapFile = new MapFile();
+            jakarta.servlet.http.Part firstPart = recto != null ? recto : verso;
+            mapFile.setNomFichier(firstPart.getSubmittedFileName());
+            mapFile.setType(firstPart.getContentType());
+            if (recto != null) {
+                mapFile.setRectoCIN(recto.getInputStream().readAllBytes());
+            }
+            if (verso != null) {
+                mapFile.setVerseauCIN(verso.getInputStream().readAllBytes());
+            }
+            return mapFile;
+        } catch (IOException e) {
+            throw new ServletException("Impossible de lire le fichier envoyé", e);
+        }
+    }
+
+    private jakarta.servlet.http.Part findPart(
+            HttpServletRequest request, String preferredName, String fallbackName)
+            throws IOException, ServletException {
+        jakarta.servlet.http.Part part = request.getPart(preferredName);
+        return part != null ? part : request.getPart(fallbackName);
     }
 
     private boolean isRequestParameterType(Class<?> type) {
