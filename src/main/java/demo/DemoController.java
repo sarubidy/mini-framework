@@ -5,7 +5,10 @@ import annotation.JsonAnnotation;
 import annotation.ObjetAnnotation;
 import annotation.UrlAnnotation;
 import model.HTTPmethode;
+import model.MapFile;
 import model.ModelAndView;
+import model.UploadedFile;
+import util.UploadStore;
 
 @Annotation
 public class DemoController {
@@ -51,13 +54,64 @@ public class DemoController {
         return modelAndView;
     }
 
+    @UrlAnnotation(value = "/upload", httpmethode = HTTPmethode.GET)
+    public ModelAndView upload() {
+        return new ModelAndView("upload");
+    }
+
+    @UrlAnnotation(value = "/upload", httpmethode = HTTPmethode.POST)
+    public ModelAndView submitUpload(@ObjetAnnotation UploadForm formulaire) {
+        MapFile fichiers = formulaire.mapFile;
+        UploadStore.store(fichiers);
+        ModelAndView modelAndView = new ModelAndView("upload-list");
+        modelAndView.addObject("fichiers", buildFileLinks());
+        return modelAndView;
+    }
+
+    @UrlAnnotation(value = "/upload/list", httpmethode = HTTPmethode.GET)
+    public ModelAndView listUploads() {
+        ModelAndView modelAndView = new ModelAndView("upload-list");
+        modelAndView.addObject("fichiers", buildFileLinks());
+        return modelAndView;
+    }
+
+    @UrlAnnotation(value = "/upload/delete", httpmethode = HTTPmethode.POST)
+    public ModelAndView deleteUpload(String id) {
+        UploadStore.delete(id);
+        ModelAndView modelAndView = new ModelAndView("upload-list");
+        modelAndView.addObject("fichiers", buildFileLinks());
+        return modelAndView;
+    }
+
+    @UrlAnnotation(value = "/upload/read", httpmethode = HTTPmethode.GET)
+    public ModelAndView readUpload(String id) {
+        UploadedFile file = UploadStore.find(id);
+        ModelAndView modelAndView = new ModelAndView("upload-read");
+        if (file == null) {
+            modelAndView.addObject("nom", "Fichier introuvable");
+            modelAndView.addObject("contenu", "L'identifiant demandé n'existe pas.");
+            return modelAndView;
+        }
+        modelAndView.addObject("nom", file.getNomFichier());
+        modelAndView.addObject("type", file.getType());
+        if (file.getType() != null && file.getType().startsWith("image/")) {
+            String image = "data:" + file.getType() + ";base64,"
+                    + java.util.Base64.getEncoder().encodeToString(file.getContenu());
+            modelAndView.addObject("image", image);
+        } else {
+            modelAndView.addObject("contenu",
+                    new String(file.getContenu(), java.nio.charset.StandardCharsets.UTF_8));
+        }
+        return modelAndView;
+    }
+
     @UrlAnnotation(value = "/form-avance", httpmethode = HTTPmethode.GET)
     public ModelAndView formAvance() {
         return new ModelAndView("formulaire-avance");
     }
 
     @UrlAnnotation(value = "/form-avance", httpmethode = HTTPmethode.POST)
-        public ModelAndView submitFormAvance(@ObjetAnnotation PersonneForm personne1,
+    public ModelAndView submitFormAvance(@ObjetAnnotation PersonneForm personne1,
             @ObjetAnnotation PersonneForm personne2, String commentaire) {
         ModelAndView modelAndView = new ModelAndView("resultat");
         String message = "Personne 1 : " + personne1.nom + ", lot : " + personne1.adresse.lot
@@ -73,7 +127,6 @@ public class DemoController {
     }
 
     @UrlAnnotation(value = "/form-recursif", httpmethode = HTTPmethode.POST)
-    //@JsonAnnotation
     public ModelAndView submitFormRecursif(@ObjetAnnotation PersonneForm personne) {
         ModelAndView modelAndView = new ModelAndView("resultat");
         modelAndView.addObject("message", "Personne : " + personne.nom
@@ -88,7 +141,7 @@ public class DemoController {
     }
 
     @UrlAnnotation(value = "/form-multiple", httpmethode = HTTPmethode.POST)
-        public ModelAndView submitFormMultiple(@ObjetAnnotation PersonneForm personne1,
+    public ModelAndView submitFormMultiple(@ObjetAnnotation PersonneForm personne1,
             @ObjetAnnotation PersonneForm personne2) {
         ModelAndView modelAndView = new ModelAndView("resultat");
         modelAndView.addObject("message", "Personne 1 : " + personne1.nom + " (" + personne1.age
@@ -102,13 +155,38 @@ public class DemoController {
     }
 
     @UrlAnnotation(value = "/form-mixte", httpmethode = HTTPmethode.POST)
-        public ModelAndView submitFormMixte(@ObjetAnnotation PersonneForm personne,
+    public ModelAndView submitFormMixte(@ObjetAnnotation PersonneForm personne,
             String commentaire, int score) {
         ModelAndView modelAndView = new ModelAndView("resultat");
         modelAndView.addObject("message", personne.nom + " | age : " + personne.age
-            + " | commentaire : " + commentaire
+                + " | commentaire : " + commentaire
                 + " | score : " + score);
         return modelAndView;
+    }
+
+    private String buildFileLinks() {
+        StringBuilder links = new StringBuilder();
+        for (UploadedFile file : UploadStore.list()) {
+            links.append("<li><a href=\"/exo/upload/read?id=")
+                    .append(file.getId())
+                    .append("\">")
+                    .append(file.getNomFichier())
+                    .append(" (")
+                    .append(file.getType())
+                    .append(")</a>")
+                    .append("<form method=\"post\" action=\"/exo/upload/delete\" style=\"display:inline\">")
+                    .append("<input type=\"hidden\" name=\"id\" value=\"")
+                    .append(file.getId())
+                    .append("\"><button type=\"submit\">Supprimer</button></form></li>");
+        }
+        return links.length() == 0 ? "<li>Aucun fichier uploadé.</li>" : links.toString();
+    }
+
+    public static class UploadForm {
+        private MapFile mapFile;
+
+        public UploadForm() {
+        }
     }
 
     public static class PersonneForm {
