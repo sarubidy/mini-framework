@@ -7,6 +7,8 @@ import annotation.UrlAnnotation;
 import model.HTTPmethode;
 import model.MapFile;
 import model.ModelAndView;
+import model.UploadedFile;
+import util.UploadStore;
 
 @Annotation
 public class DemoController {
@@ -60,13 +62,65 @@ public class DemoController {
     @UrlAnnotation(value = "/upload", httpmethode = HTTPmethode.POST)
     public ModelAndView submitUpload(@ObjetAnnotation UploadForm formulaire) {
         MapFile fichiers = formulaire.mapFile;
-        String message = "Fichier : " + fichiers.getNomFichier()
-                + " | type : " + fichiers.getType()
-                + " | recto : " + size(fichiers.getRectoCIN())
-                + " octets | verso : " + size(fichiers.getVerseauCIN()) + " octets";
-        ModelAndView modelAndView = new ModelAndView("resultat");
-        modelAndView.addObject("message", message);
+        UploadStore.store(fichiers);
+        ModelAndView modelAndView = new ModelAndView("upload-list");
+        modelAndView.addObject("fichiers", buildFileLinks());
         return modelAndView;
+    }
+
+    @UrlAnnotation(value = "/upload/list", httpmethode = HTTPmethode.GET)
+    public ModelAndView listUploads() {
+        ModelAndView modelAndView = new ModelAndView("upload-list");
+        modelAndView.addObject("fichiers", buildFileLinks());
+        return modelAndView;
+    }
+
+    @UrlAnnotation(value = "/upload/delete", httpmethode = HTTPmethode.POST)
+    public ModelAndView deleteUpload(String id) {
+        UploadStore.delete(id);
+        ModelAndView modelAndView = new ModelAndView("upload-list");
+        modelAndView.addObject("fichiers", buildFileLinks());
+        return modelAndView;
+    }
+
+    @UrlAnnotation(value = "/upload/read", httpmethode = HTTPmethode.GET)
+    public ModelAndView readUpload(String id) {
+        UploadedFile file = UploadStore.find(id);
+        ModelAndView modelAndView = new ModelAndView("upload-read");
+        if (file == null) {
+            modelAndView.addObject("nom", "Fichier introuvable");
+            modelAndView.addObject("contenu", "L'identifiant demandé n'existe pas.");
+            return modelAndView;
+        }
+        modelAndView.addObject("nom", file.getNomFichier());
+        modelAndView.addObject("type", file.getType());
+        if (file.getType() != null && file.getType().startsWith("image/")) {
+            String image = "data:" + file.getType() + ";base64,"
+                + java.util.Base64.getEncoder().encodeToString(file.getContenu());
+            modelAndView.addObject("image", image);
+        } else {
+            modelAndView.addObject("contenu",
+                new String(file.getContenu(), java.nio.charset.StandardCharsets.UTF_8));
+        }
+        return modelAndView;
+    }
+
+    private String buildFileLinks() {
+        StringBuilder links = new StringBuilder();
+        for (UploadedFile file : UploadStore.list()) {
+            links.append("<li><a href=\"/exo/upload/read?id=")
+                    .append(file.getId())
+                    .append("\">")
+                    .append(file.getNomFichier())
+                    .append(" (" )
+                    .append(file.getType())
+                .append(")</a>")
+                .append("<form method=\"post\" action=\"/exo/upload/delete\" style=\"display:inline\">")
+                .append("<input type=\"hidden\" name=\"id\" value=\"")
+                .append(file.getId())
+                .append("\"><button type=\"submit\">Supprimer</button></form></li>");
+        }
+        return links.length() == 0 ? "<li>Aucun fichier uploadé.</li>" : links.toString();
     }
 
     private int size(byte[] value) {
