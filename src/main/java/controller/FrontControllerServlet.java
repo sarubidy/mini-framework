@@ -13,11 +13,13 @@ import annotation.Annotation;
 import annotation.JsonAnnotation;
 import annotation.ObjetAnnotation;
 import annotation.UrlAnnotation;
+import com.miniframework.mvc.Session;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import model.HTTPmethode;
 import model.MethodeInfo;
 import model.UrlInfo;
@@ -141,7 +143,11 @@ public class FrontControllerServlet extends HttpServlet {
                 arguments[index] = springContext;
                 continue;
             }
-            if (isRequestParameterType(parameterType)) {
+            if (parameterType == Session.class) {
+                arguments[index] = new Session(request.getSession());
+            } else if (parameterType == HttpSession.class) {
+                arguments[index] = request.getSession();
+            } else if (isRequestParameterType(parameterType)) {
                 String value = request.getParameter(parameters[index].getName());
                 arguments[index] = convertParameter(value, parameterType);
             } else if (parameters[index].isAnnotationPresent(ObjetAnnotation.class)) {
