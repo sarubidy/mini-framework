@@ -4,11 +4,14 @@ import annotation.Annotation;
 import annotation.JsonAnnotation;
 import annotation.ObjetAnnotation;
 import annotation.UrlAnnotation;
+import com.miniframework.mvc.Session;
 import model.HTTPmethode;
 import model.MapFile;
 import model.ModelAndView;
 import model.UploadedFile;
 import util.UploadStore;
+
+import java.util.Map;
 
 @Annotation
 public class DemoController {
@@ -21,6 +24,20 @@ public class DemoController {
     @JsonAnnotation
     public DemoUser json() {
         return new DemoUser(1, "Sarobidy 3993", "sarobidy@gmail.com");
+    }
+
+    @UrlAnnotation(value = "/login", httpmethode = HTTPmethode.POST)
+    @JsonAnnotation
+    public Map<String, String> login(String username, Session session) {
+        session.set("username", username);
+        return Map.of("message", "Connexion réussie", "username", username);
+    }
+
+    @UrlAnnotation(value = "/profil", httpmethode = HTTPmethode.GET)
+    @JsonAnnotation
+    public Map<String, Object> profil(Session session) {
+        Object username = session.get("username");
+        return Map.of("username", username == null ? "" : username);
     }
 
     @UrlAnnotation(value = "/vue", httpmethode = HTTPmethode.GET)
