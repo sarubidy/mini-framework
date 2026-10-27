@@ -26,6 +26,11 @@ public class DemoController {
         return new DemoUser(1, "Sarobidy 3993", "sarobidy@gmail.com");
     }
 
+    @UrlAnnotation(value = "/login", httpmethode = HTTPmethode.GET)
+    public ModelAndView loginForm() {
+        return new ModelAndView("login");
+    }
+
     @UrlAnnotation(value = "/login", httpmethode = HTTPmethode.POST)
     @JsonAnnotation
     public Map<String, String> login(String username, Session session) {
