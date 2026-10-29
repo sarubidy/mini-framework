@@ -1,6 +1,8 @@
 D:\My_docs\sprint\mini-framework\src\main\java\annotation\Annotation.java
+D:\My_docs\sprint\mini-framework\src\main\java\annotation\Authenticated.java
 D:\My_docs\sprint\mini-framework\src\main\java\annotation\JsonAnnotation.java
 D:\My_docs\sprint\mini-framework\src\main\java\annotation\ObjetAnnotation.java
+D:\My_docs\sprint\mini-framework\src\main\java\annotation\RoleAllowed.java
 D:\My_docs\sprint\mini-framework\src\main\java\annotation\UrlAnnotation.java
 D:\My_docs\sprint\mini-framework\src\main\java\com\miniframework\mvc\Session.java
 D:\My_docs\sprint\mini-framework\src\main\java\controller\FrontControllerServlet.java
