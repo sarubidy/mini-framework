@@ -1,8 +1,10 @@
 package demo;
 
 import annotation.Annotation;
+import annotation.Authenticated;
 import annotation.JsonAnnotation;
 import annotation.ObjetAnnotation;
+import annotation.RoleAllowed;
 import annotation.UrlAnnotation;
 import com.miniframework.mvc.Session;
 import model.HTTPmethode;
@@ -10,8 +12,6 @@ import model.MapFile;
 import model.ModelAndView;
 import model.UploadedFile;
 import util.UploadStore;
-
-import java.util.Map;
 
 @Annotation
 public class DemoController {
@@ -26,18 +26,50 @@ public class DemoController {
         return new DemoUser(1, "Sarobidy 3993", "sarobidy@gmail.com");
     }
 
+    @UrlAnnotation(value = "/login", httpmethode = HTTPmethode.GET)
+    public ModelAndView loginForm() {
+        return new ModelAndView("login");
+    }
+
     @UrlAnnotation(value = "/login", httpmethode = HTTPmethode.POST)
-    @JsonAnnotation
-    public Map<String, String> login(String username, Session session) {
-        session.set("username", username);
-        return Map.of("message", "Connexion réussie", "username", username);
+    public ModelAndView login(String username, String password, Session session) {
+        String role = findRole(username, password);
+        if (role == null) {
+            ModelAndView modelAndView = new ModelAndView("login");
+            modelAndView.addObject("error", "Identifiants invalides.");
+            return modelAndView;
+        }
+        session.set("authenticatedUser", username);
+        session.set("authenticatedRole", role);
+        ModelAndView modelAndView = new ModelAndView("login-result");
+        modelAndView.addObject("username", username);
+        modelAndView.addObject("role", role);
+        return modelAndView;
     }
 
     @UrlAnnotation(value = "/profil", httpmethode = HTTPmethode.GET)
-    @JsonAnnotation
-    public Map<String, Object> profil(Session session) {
-        Object username = session.get("username");
-        return Map.of("username", username == null ? "" : username);
+    @Authenticated
+    public ModelAndView profil(Session session) {
+        ModelAndView modelAndView = new ModelAndView("profil");
+        modelAndView.addObject("username", (String) session.get("authenticatedUser"));
+        modelAndView.addObject("role", (String) session.get("authenticatedRole"));
+        return modelAndView;
+    }
+
+    @UrlAnnotation(value = "/admin", httpmethode = HTTPmethode.GET)
+    @RoleAllowed("ADMIN")
+    public ModelAndView admin() {
+        return new ModelAndView("admin");
+    }
+
+    private String findRole(String username, String password) {
+        if ("alice".equals(username) && "alice123".equals(password)) {
+            return "USER";
+        }
+        if ("admin".equals(username) && "admin123".equals(password)) {
+            return "ADMIN";
+        }
+        return null;
     }
 
     @UrlAnnotation(value = "/vue", httpmethode = HTTPmethode.GET)

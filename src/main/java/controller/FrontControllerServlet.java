@@ -10,8 +10,10 @@ import java.util.Set;
 
 import com.google.gson.Gson;
 import annotation.Annotation;
+import annotation.Authenticated;
 import annotation.JsonAnnotation;
 import annotation.ObjetAnnotation;
+import annotation.RoleAllowed;
 import annotation.UrlAnnotation;
 import com.miniframework.mvc.Session;
 import jakarta.servlet.annotation.MultipartConfig;
@@ -94,6 +96,9 @@ public class FrontControllerServlet extends HttpServlet {
 
         try {
             Method methode = method.getMethode();
+            if (!enforceAuthorization(methode, request, response)) {
+                return;
+            }
             Object instance = methode.getDeclaringClass().getDeclaredConstructor().newInstance();
             Object resultat = methode.invoke(instance, buildArguments(methode, request));
 
@@ -130,6 +135,41 @@ public class FrontControllerServlet extends HttpServlet {
         } catch (Exception e) {
             throw new ServletException("Erreur lors de l'invocation de la méthode", e);
         }
+    }
+
+    private boolean enforceAuthorization(
+            Method methode, HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        Authenticated authenticated = methode.getAnnotation(Authenticated.class);
+        RoleAllowed roleAllowed = methode.getAnnotation(RoleAllowed.class);
+        if (authenticated == null && roleAllowed == null) {
+            return true;
+        }
+
+        HttpSession session = request.getSession(false);
+        Object username = session == null ? null : session.getAttribute("authenticatedUser");
+        if (username == null) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
+                    "Authentification requise pour accéder à cette action");
+            return false;
+        }
+
+        if (roleAllowed != null) {
+            Object currentRole = session.getAttribute("authenticatedRole");
+            boolean allowed = false;
+            for (String expectedRole : roleAllowed.value()) {
+                if (expectedRole.equals(currentRole)) {
+                    allowed = true;
+                    break;
+                }
+            }
+            if (!allowed) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                        "Rôle insuffisant pour accéder à cette action");
+                return false;
+            }
+        }
+        return true;
     }
 
     private Object[] buildArguments(Method methode, HttpServletRequest request) throws ServletException {
