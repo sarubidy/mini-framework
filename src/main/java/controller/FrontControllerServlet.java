@@ -32,6 +32,7 @@ import util.Utilitaire;
 @MultipartConfig(maxFileSize = 10 * 1024 * 1024, maxRequestSize = 25 * 1024 * 1024)
 public class FrontControllerServlet extends HttpServlet {
     private HashMap<UrlInfo, MethodeInfo> mapping = new HashMap<>();
+    private final Map<Class<?>, Object> controllerInstances = new HashMap<>();
     private String prefixe = "";
     private String suffixe = "";
     private final Gson gson = new Gson();
@@ -99,7 +100,7 @@ public class FrontControllerServlet extends HttpServlet {
             if (!enforceAuthorization(methode, request, response)) {
                 return;
             }
-            Object instance = methode.getDeclaringClass().getDeclaredConstructor().newInstance();
+            Object instance = getControllerInstance(methode.getDeclaringClass());
             Object resultat = methode.invoke(instance, buildArguments(methode, request));
 
             if (methode.isAnnotationPresent(JsonAnnotation.class)) {
@@ -135,6 +136,23 @@ public class FrontControllerServlet extends HttpServlet {
         } catch (Exception e) {
             throw new ServletException("Erreur lors de l'invocation de la méthode", e);
         }
+    }
+
+    private synchronized Object getControllerInstance(Class<?> controllerType) throws ServletException {
+        Object instance = controllerInstances.get(controllerType);
+        if (instance != null) {
+            return instance;
+        }
+        try {
+            instance = controllerType.getDeclaredConstructor().newInstance();
+        } catch (ReflectiveOperationException e) {
+            throw new ServletException(
+                    "Le contrôleur " + controllerType.getName()
+                            + " doit avoir un constructeur sans paramètre accessible",
+                    e);
+        }
+        controllerInstances.put(controllerType, instance);
+        return instance;
     }
 
     private boolean enforceAuthorization(

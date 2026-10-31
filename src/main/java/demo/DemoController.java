@@ -15,6 +15,10 @@ import util.UploadStore;
 
 @Annotation
 public class DemoController {
+    public DemoController() {
+        System.out.println("DemoController instancié une seule fois");
+    }
+
     @UrlAnnotation(value = "/", httpmethode = HTTPmethode.GET)
     public String accueil() {
         return "Le mini-framework fonctionne sur Tomcat.";

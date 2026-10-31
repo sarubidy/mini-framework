@@ -27,3 +27,11 @@ supportée lorsque l’API Servlet est nécessaire.
 Ne retournez jamais l’objet `Session` directement dans une réponse JSON :
 Gson pourrait tenter de sérialiser l’objet `HttpSession` interne. Retournez
 uniquement les valeurs ou les structures extraites de la session.
+
+## Contrôleurs singleton
+
+Le `FrontControllerServlet` conserve une instance de chaque classe de
+contrôleur dans une map. Le contrôleur est instancié paresseusement lors de
+sa première requête, puis la même instance est réutilisée pour les requêtes
+suivantes. Le constructeur de `DemoController` affiche un message de
+vérification une seule fois dans les logs Tomcat.
